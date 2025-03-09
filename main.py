@@ -48,7 +48,6 @@ def call_openrouter_api(messages):
         }
         data = {
             "model": "qwen/qwq-32b",
-            "route": "groq",  # Specify Groq as the provider for better throughput
             "messages": messages
         }
         
@@ -59,8 +58,9 @@ def call_openrouter_api(messages):
         if response.status_code == 200:
             return response.json()["choices"][0]["message"]["content"]
         else:
-            print(f"API Error: {response.status_code} - {response.text}")
-            return f"Error: Unable to get a response (Status code: {response.status_code})"
+            error_text = response.text
+            print(f"API Error: {response.status_code} - {error_text}")
+            return f"Error: Unable to get a response (Status code: {response.status_code}). Details: {error_text}"
     
     except Exception as e:
         error_details = traceback.format_exc()
@@ -87,12 +87,6 @@ with st.sidebar:
     - Problem-solving
     - Detailed explanations
     - Nuanced understanding
-    """)
-    
-    # Add information about Groq provider
-    st.header("Powered by Groq")
-    st.markdown("""
-    This chatbot uses Groq as the provider through OpenRouter for enhanced throughput and faster response times.
     """)
     
     # Add a clear button to reset the conversation
