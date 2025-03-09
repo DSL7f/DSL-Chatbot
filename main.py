@@ -42,11 +42,13 @@ def call_openrouter_api(messages):
         url = "https://openrouter.ai/api/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://streamlit-app.com",  # Optional for OpenRouter stats
+            "X-Title": "QWQ-32B AI Chatbot"               # Optional for OpenRouter stats
         }
         data = {
             "model": "qwen/qwq-32b",
-            "route": "groq",  # Use Groq provider for better throughput
+            "route": "groq",  # Specify Groq as the provider for better throughput
             "messages": messages
         }
         
@@ -85,6 +87,12 @@ with st.sidebar:
     - Problem-solving
     - Detailed explanations
     - Nuanced understanding
+    """)
+    
+    # Add information about Groq provider
+    st.header("Powered by Groq")
+    st.markdown("""
+    This chatbot uses Groq as the provider through OpenRouter for enhanced throughput and faster response times.
     """)
     
     # Add a clear button to reset the conversation
