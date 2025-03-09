@@ -72,33 +72,33 @@ def get_openai_client(_api_key):
 with st.sidebar:
     st.title("Settings")
     
-    # Simple API Key input without a form
-    api_key = st.text_input(
-        "OpenRouter API Key",
-        value=st.session_state.api_key,
-        type="password",
-        help="Enter your OpenRouter API key. Get one at https://openrouter.ai/keys"
-    )
-    
-    # Update API key and client when the input changes
-    if api_key != st.session_state.api_key:
-        st.session_state.api_key = api_key
-        if api_key:
-            st.session_state.client = get_openai_client(api_key)
-            st.success("API key updated successfully!")
-        else:
-            st.session_state.client = None
+    # API Key input with a form
+    with st.form("api_key_form"):
+        api_key = st.text_input(
+            "OpenRouter API Key",
+            type="password",
+            help="Enter your OpenRouter API key. Get one at https://openrouter.ai/keys"
+        )
+        submit_button = st.form_submit_button("Submit API Key")
+        
+        if submit_button:
+            if api_key:
+                st.session_state.api_key = api_key
+                st.session_state.client = get_openai_client(api_key)
+                st.success("API key updated successfully!")
+            else:
+                st.error("Please enter an API key")
     
     # Display current API key status
     if st.session_state.api_key:
         st.success("API key is set ✅")
     else:
-        st.error("Please enter your OpenRouter API key to continue")
+        st.warning("Please enter your OpenRouter API key to continue")
     
     # Add a clear button to reset the conversation
     if st.button("Clear Conversation"):
         st.session_state.messages = []
-        st.rerun()
+        st.session_state.rerun_requested = True
     
     st.title("About")
     st.markdown("""
