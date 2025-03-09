@@ -83,12 +83,12 @@ with st.sidebar:
     # Update API key in session state when changed
     if api_key != st.session_state.api_key:
         st.session_state.api_key = api_key
-        st.experimental_rerun()
+        st.rerun()
     
     # Add a clear button to reset the conversation
     if st.button("Clear Conversation"):
         st.session_state.messages = []
-        st.experimental_rerun()
+        st.rerun()
     
     st.title("About")
     st.markdown("""
