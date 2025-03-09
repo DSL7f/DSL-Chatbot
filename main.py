@@ -35,13 +35,21 @@ if "client" not in st.session_state:
     # Try to initialize the client with the API key from Streamlit secrets
     try:
         api_key = st.secrets["OPENROUTER_API_KEY"]
+        # Simple client initialization without extra parameters
         st.session_state.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
             api_key=api_key
         )
+        # Test the client with a simple request
+        test_response = st.session_state.client.chat.completions.create(
+            model="openai/gpt-3.5-turbo",
+            messages=[{"role": "system", "content": "Hello"}],
+            max_tokens=5
+        )
     except Exception as e:
         st.session_state.client = None
         st.error("Error initializing the chatbot. Please contact the administrator.")
+        print(f"Error details: {traceback.format_exc()}")
         st.stop()
 
 # Main app title and description
@@ -82,10 +90,6 @@ def generate_response(messages):
         with st.spinner("Thinking..."):
             completion = st.session_state.client.chat.completions.create(
                 model="qwen/qwq-32b",
-                extra_headers={
-                    "HTTP-Referer": "https://streamlit-app.com",
-                    "X-Title": "QWQ-32B AI Chatbot",
-                },
                 messages=[
                     {"role": m["role"], "content": m["content"]} 
                     for m in messages
