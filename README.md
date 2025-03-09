@@ -13,6 +13,8 @@ OpenRouter is a unified API that gives you access to hundreds of AI models throu
 - Text generation with multiple model options (QWQ-32B, GPT-4o, Claude-3-Opus, etc.)
 - Image generation capabilities
 - Secure API key management using Streamlit secrets
+- Fallback to manual API key input if secrets aren't configured
+- Detailed error reporting and debugging information
 - Clean, user-friendly interface
 - Conversation history maintained during the session
 
@@ -56,32 +58,50 @@ OpenRouter is a unified API that gives you access to hundreds of AI models throu
 
 4. **IMPORTANT**: Set the OpenRouter API key as a secret:
    - In the app settings, go to the "Secrets" section
-   - Add your API key in the following format:
+   - Add your API key in the following format (exactly as shown):
      ```toml
      OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
      ```
-   - Make sure to include the quotes around your API key
+   - Make sure to:
+     - Include the quotes around your API key
+     - Use the exact variable name `OPENROUTER_API_KEY`
+     - Include spaces around the equals sign
    - Click "Save" to store your secret
 
 5. Deploy the app by clicking "Deploy!"
 
-## Troubleshooting Streamlit Cloud Deployment
+## API Key Options
 
-If you're experiencing issues with the API key not being recognized in Streamlit Cloud:
+The application provides two ways to use your OpenRouter API key:
 
-1. **Check the secret format**:
+1. **Streamlit Secrets (Recommended)**: Configure your API key in Streamlit Cloud secrets or in a local `.streamlit/secrets.toml` file.
+
+2. **Manual Input**: If the secrets method fails or isn't configured, you can enter your API key directly in the sidebar. This is useful for testing or if you're having issues with the secrets configuration.
+
+## Troubleshooting
+
+If you're experiencing issues with the API key:
+
+1. **Check the Debug Information** in the sidebar, which shows:
+   - Secrets Status: Whether the API key was found in secrets
+   - Client Initialized: Whether the OpenRouter client was successfully initialized
+
+2. **Check the Secret Format**:
    - The secret must be in this exact format:
      ```toml
      OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
      ```
-   - Include the quotes around the API key
-   - Do not add any comments or extra characters in the secrets management section
+   - Common mistakes to avoid:
+     - Missing quotes around the API key
+     - Typos in the variable name (must be exactly `OPENROUTER_API_KEY`)
+     - Extra spaces or characters in the API key
+     - Comments or other text in the secrets section
 
-2. **Verify the API key**:
-   - Make sure your OpenRouter API key is valid and active
-   - Test it with the "Test OpenRouter Connection" button in the sidebar
+3. **Try Manual Input**:
+   - If the secrets method isn't working, enter your API key manually in the sidebar
+   - The app will test the key immediately and show if it's valid
 
-3. **Restart the app**:
+4. **Restart the App**:
    - After setting or updating secrets, restart your Streamlit app
    - In the Streamlit Cloud dashboard, click on the three dots next to your app and select "Reboot app"
 
@@ -89,15 +109,16 @@ If you're experiencing issues with the API key not being recognized in Streamlit
 
 The application connects to OpenRouter's API using the OpenAI Python library because OpenRouter uses the OpenAI API format. This allows us to access a wide range of models through a single, consistent interface.
 
-The application securely loads your API key from Streamlit's secrets management system, which keeps it safe and prevents it from being exposed in your code or version control.
+The application tries to load your API key from Streamlit's secrets management system first. If that fails, it provides a fallback option to enter your API key manually in the sidebar.
 
 ## Usage
 
-1. Select the model type (Text or Image Generation) from the sidebar
-2. Choose a specific model from the dropdown menu
-3. Type your message in the chat input box and press Enter
-4. View the AI's response in the chat
-5. Use the "Clear Conversation" button in the sidebar to start a new conversation
+1. Ensure your API key is configured (either via secrets or manual input)
+2. Select the model type (Text or Image Generation) from the sidebar
+3. Choose a specific model from the dropdown menu
+4. Type your message in the chat input box and press Enter
+5. View the AI's response in the chat
+6. Use the "Clear Conversation" button in the sidebar to start a new conversation
 
 ## Important Notes
 

@@ -1,5 +1,6 @@
 import streamlit as st
 from openai import OpenAI
+import traceback
 
 # Set page configuration
 st.set_page_config(
@@ -32,33 +33,97 @@ if "model_type" not in st.session_state:
 if "selected_model" not in st.session_state:
     st.session_state.selected_model = "qwen/qwq-32b"
 
-# Try to get API key from Streamlit secrets
-try:
-    api_key = st.secrets["OPENROUTER_API_KEY"]
-    # Initialize OpenAI client with OpenRouter base URL
-    client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=api_key,
-    )
-    api_key_status = "API key loaded from secrets ✅"
-except Exception as e:
-    client = None
-    api_key_status = f"Error loading API key: {str(e)}"
+if "manual_api_key" not in st.session_state:
+    st.session_state.manual_api_key = ""
 
-# Add a sidebar with information and settings
+if "client" not in st.session_state:
+    st.session_state.client = None
+
+# Function to initialize the OpenRouter client
+def initialize_client(api_key):
+    try:
+        # Clean the API key (remove any whitespace or quotes)
+        api_key = api_key.strip().strip('"\'')
+        
+        # Initialize the client
+        client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=api_key
+        )
+        
+        # Test the client with a simple request
+        test_response = client.chat.completions.create(
+            model="openai/gpt-3.5-turbo",
+            messages=[{"role": "system", "content": "Hello"}],
+            max_tokens=5
+        )
+        
+        return client, True, "API key verified and connection successful ✅"
+    except Exception as e:
+        error_details = traceback.format_exc()
+        return None, False, f"Error initializing client: {str(e)}\n\nDetails: {error_details}"
+
+# Main app title
+st.title("OpenRouter AI Chatbot")
+
+# Sidebar for settings
 with st.sidebar:
-    st.title("OpenRouter AI Chatbot")
-    st.markdown("""
-    This chatbot uses OpenRouter to access various AI models.
+    st.header("Settings")
     
-    OpenRouter provides access to models like QWQ-32B, GPT-4o, Claude, and more through a unified API.
+    # API Key Management
+    st.subheader("API Key")
     
-    The chat history is maintained during your session.
-    """)
+    # Try to get API key from Streamlit secrets
+    secrets_key_status = ""
+    client_initialized = False
     
-    # Display API key status
-    st.subheader("API Key Status")
-    st.info(api_key_status)
+    try:
+        if "OPENROUTER_API_KEY" in st.secrets:
+            api_key = st.secrets["OPENROUTER_API_KEY"]
+            st.success("API key found in Streamlit secrets")
+            
+            # Initialize client with the secret key
+            client, success, message = initialize_client(api_key)
+            if success:
+                st.session_state.client = client
+                client_initialized = True
+                st.success(message)
+            else:
+                st.error(f"Secret API key error: {message}")
+                secrets_key_status = "invalid"
+        else:
+            st.warning("No API key found in Streamlit secrets")
+            secrets_key_status = "missing"
+    except Exception as e:
+        st.error(f"Error accessing secrets: {str(e)}")
+        secrets_key_status = "error"
+    
+    # If secrets didn't work, show manual input
+    if not client_initialized:
+        st.write("Enter your OpenRouter API key manually:")
+        manual_key = st.text_input(
+            "API Key",
+            type="password",
+            value=st.session_state.manual_api_key,
+            help="Get an API key from https://openrouter.ai/keys"
+        )
+        
+        if manual_key:
+            st.session_state.manual_api_key = manual_key
+            
+            # Initialize client with the manual key
+            client, success, message = initialize_client(manual_key)
+            if success:
+                st.session_state.client = client
+                client_initialized = True
+                st.success(message)
+            else:
+                st.error(f"Manual API key error: {message}")
+    
+    # Debug information
+    st.subheader("Debug Information")
+    st.write(f"Secrets Status: {secrets_key_status}")
+    st.write(f"Client Initialized: {client_initialized}")
     
     # Model selection
     st.subheader("Model Selection")
@@ -85,22 +150,6 @@ with st.sidebar:
     if st.button("Clear Conversation"):
         st.session_state.messages = []
         st.rerun()
-    
-    # Test connection button
-    if st.button("Test OpenRouter Connection"):
-        if client:
-            try:
-                # Simple test request
-                response = client.chat.completions.create(
-                    model="openai/gpt-3.5-turbo",
-                    messages=[{"role": "user", "content": "Hello"}],
-                    max_tokens=5
-                )
-                st.success("OpenRouter connection successful! ✅")
-            except Exception as e:
-                st.error(f"OpenRouter connection failed: {str(e)}")
-        else:
-            st.error("Client not initialized. Check API key.")
 
 # Display chat history
 for message in st.session_state.messages:
@@ -114,7 +163,7 @@ for message in st.session_state.messages:
 def generate_text_response(messages):
     try:
         with st.spinner("Thinking..."):
-            completion = client.chat.completions.create(
+            completion = st.session_state.client.chat.completions.create(
                 model=st.session_state.selected_model,
                 extra_headers={
                     "HTTP-Referer": "https://streamlit-app.com",  # optional
@@ -134,7 +183,7 @@ def generate_text_response(messages):
 def generate_image(prompt):
     try:
         with st.spinner("Generating image..."):
-            response = client.images.generate(
+            response = st.session_state.client.images.generate(
                 model=st.session_state.selected_model,
                 prompt=prompt,
                 size="1024x1024",
@@ -148,8 +197,8 @@ def generate_image(prompt):
 
 # Main response generation function
 def generate_response(prompt):
-    if not client:
-        return "Error: OpenRouter client is not initialized. Please check your API key in Streamlit secrets.", None
+    if not st.session_state.client:
+        return "Error: OpenRouter client is not initialized. Please check your API key in the sidebar.", None
     
     if st.session_state.model_type == "Text":
         return generate_text_response(st.session_state.messages), None
