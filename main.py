@@ -3,12 +3,6 @@ import os
 from openai import OpenAI
 from dotenv import load_dotenv
 
-# Load environment variables from .env file if it exists
-load_dotenv()
-
-# Get the API key from environment variable with fallback to None
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
 # Set page configuration
 st.set_page_config(
     page_title="AI Chatbot",
@@ -30,12 +24,26 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# Get API key from various sources with priority:
+# 1. Streamlit secrets (for deployment)
+# 2. Environment variables (for local development with .env)
+# 3. User input (fallback)
+
+# Try to get API key from Streamlit secrets
+api_key = None
+try:
+    api_key = st.secrets["OPENROUTER_API_KEY"]
+except Exception:
+    # If not in secrets, try environment variables
+    load_dotenv()
+    api_key = os.getenv("OPENROUTER_API_KEY")
+
 # Initialize session states
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 if "api_key" not in st.session_state:
-    st.session_state.api_key = OPENROUTER_API_KEY
+    st.session_state.api_key = api_key
 
 if "client" not in st.session_state:
     # Will be initialized later when we have the API key
@@ -58,17 +66,17 @@ with st.sidebar:
     The chat history is maintained during your session.
     """)
     
-    # API Key input if not set in environment
+    # API Key input if not set in environment or secrets
     if not st.session_state.api_key:
-        st.warning("No API key found in environment variables.")
-        api_key = st.text_input(
+        st.warning("No API key found in secrets or environment variables.")
+        api_key_input = st.text_input(
             "Enter your OpenRouter API key:",
             type="password",
             help="Get an API key from https://openrouter.ai/keys"
         )
         
-        if api_key:
-            st.session_state.api_key = api_key
+        if api_key_input:
+            st.session_state.api_key = api_key_input
             st.success("API key set successfully!")
             st.session_state.rerun_requested = True
     else:
