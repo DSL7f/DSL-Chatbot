@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from openai import OpenAI
 from dotenv import load_dotenv
+import json
 
 # Set page configuration
 st.set_page_config(
@@ -24,19 +25,33 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Get API key from various sources with priority:
-# 1. Streamlit secrets (for deployment)
-# 2. Environment variables (for local development with .env)
-# 3. User input (fallback)
-
-# Try to get API key from Streamlit secrets
-api_key = None
+# Debug: Print available secrets (without exposing values)
 try:
-    api_key = st.secrets["OPENROUTER_API_KEY"]
-except Exception:
-    # If not in secrets, try environment variables
+    # Just check if we can access secrets
+    if hasattr(st, 'secrets'):
+        st.sidebar.success("Secrets are available")
+    else:
+        st.sidebar.warning("Secrets are not available")
+except Exception as e:
+    st.sidebar.error(f"Error checking secrets: {str(e)}")
+
+# Get API key from various sources with priority
+api_key = None
+
+# 1. Try to get API key from Streamlit secrets
+try:
+    if hasattr(st, 'secrets') and "OPENROUTER_API_KEY" in st.secrets:
+        api_key = st.secrets["OPENROUTER_API_KEY"]
+        st.sidebar.success("API key found in Streamlit secrets")
+except Exception as e:
+    st.sidebar.error(f"Error accessing secrets: {str(e)}")
+
+# 2. If not in secrets, try environment variables
+if not api_key:
     load_dotenv()
     api_key = os.getenv("OPENROUTER_API_KEY")
+    if api_key:
+        st.sidebar.success("API key found in environment variables")
 
 # Initialize session states
 if "messages" not in st.session_state:
@@ -111,12 +126,14 @@ with st.sidebar:
 # Initialize the client if we have an API key but no client
 if st.session_state.api_key and not st.session_state.client:
     try:
+        # Simplified client initialization to avoid 'proxies' error
         st.session_state.client = OpenAI(
             base_url="https://openrouter.ai/api/v1",
-            api_key=st.session_state.api_key,
+            api_key=st.session_state.api_key
         )
+        st.sidebar.success("OpenAI client initialized successfully")
     except Exception as e:
-        st.error(f"Error initializing client: {str(e)}")
+        st.sidebar.error(f"Error initializing client: {str(e)}")
         st.session_state.client = None
 
 # Display chat history
@@ -162,7 +179,7 @@ def generate_image(prompt):
 # Main response generation function
 def generate_response(prompt):
     if not st.session_state.client:
-        return "Please provide an OpenRouter API key to continue.", None
+        return f"Please provide an OpenRouter API key to continue. Current API key status: {'Set' if st.session_state.api_key else 'Not set'}", None
     
     if st.session_state.model_type == "Text":
         return generate_text_response(st.session_state.messages), None

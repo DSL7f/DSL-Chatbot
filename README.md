@@ -52,9 +52,35 @@ This is a Streamlit-based chatbot that uses OpenRouter to access various AI mode
      OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
      ```
    - Make sure to include the quotes around your API key
+   - The format must be exactly as shown above (with spaces around the equals sign)
    - Click "Save" to store your secret
 
 5. Deploy the app by clicking "Deploy!"
+
+## Troubleshooting Streamlit Cloud Deployment
+
+If you're experiencing issues with the API key not being recognized in Streamlit Cloud:
+
+1. **Check the secret format**:
+   - The secret must be in this exact format:
+     ```toml
+     OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
+     ```
+   - Include the quotes around the API key
+   - Include spaces around the equals sign
+   - Do not add any comments or extra characters
+
+2. **Verify the API key**:
+   - Make sure your OpenRouter API key is valid and active
+   - Test it with a direct API call to OpenRouter
+
+3. **Restart the app**:
+   - After setting or updating secrets, restart your Streamlit app
+   - In the Streamlit Cloud dashboard, click on the three dots next to your app and select "Reboot app"
+
+4. **Check for error messages**:
+   - The app now includes debug information in the sidebar
+   - Look for success or error messages related to secrets and client initialization
 
 The application is designed to check for the API key in the following order:
 1. Streamlit secrets (for cloud deployment)
@@ -76,22 +102,6 @@ This ensures that your app will work seamlessly in both local and cloud environm
 - All usage will be billed to the OpenRouter account associated with the API key
 - Consider implementing usage limits or monitoring to prevent unexpected costs
 - Keep your API key secure and never commit it to version control
-
-## Troubleshooting
-
-- **API Key Error**: If you see an error about the API key not being set, make sure you've added it correctly in the Streamlit Cloud secrets. The format should be exactly:
-  ```toml
-  OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
-  ```
-  
-- **Model Not Found**: Ensure you're using a valid model ID from OpenRouter's available models.
-
-- **Rate Limiting**: If you encounter rate limiting errors, you may need to upgrade your OpenRouter plan or implement rate limiting in your application.
-
-- **Deployment Issues**: If your app fails to deploy, check the logs in Streamlit Cloud for specific error messages. Common issues include:
-  - Incorrect secret format (missing quotes)
-  - Invalid API key
-  - Package version conflicts
 
 ## License
 
