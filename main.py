@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 # Load environment variables from .env file if it exists
 load_dotenv()
 
-# Get the API key from environment variable
+# Get the API key from environment variable with fallback to None
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # Set page configuration
@@ -34,12 +34,12 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "api_key" not in st.session_state:
+    st.session_state.api_key = OPENROUTER_API_KEY
+
 if "client" not in st.session_state:
-    # Initialize the client with the pre-configured API key
-    st.session_state.client = OpenAI(
-        base_url="https://openrouter.ai/api/v1",
-        api_key=OPENROUTER_API_KEY,
-    )
+    # Will be initialized later when we have the API key
+    st.session_state.client = None
 
 if "rerun_requested" not in st.session_state:
     st.session_state.rerun_requested = False
@@ -57,6 +57,22 @@ with st.sidebar:
     
     The chat history is maintained during your session.
     """)
+    
+    # API Key input if not set in environment
+    if not st.session_state.api_key:
+        st.warning("No API key found in environment variables.")
+        api_key = st.text_input(
+            "Enter your OpenRouter API key:",
+            type="password",
+            help="Get an API key from https://openrouter.ai/keys"
+        )
+        
+        if api_key:
+            st.session_state.api_key = api_key
+            st.success("API key set successfully!")
+            st.session_state.rerun_requested = True
+    else:
+        st.success("API key is configured ✅")
     
     # Model selection
     st.subheader("Model Selection")
@@ -83,6 +99,17 @@ with st.sidebar:
     if st.button("Clear Conversation"):
         st.session_state.messages = []
         st.session_state.rerun_requested = True
+
+# Initialize the client if we have an API key but no client
+if st.session_state.api_key and not st.session_state.client:
+    try:
+        st.session_state.client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=st.session_state.api_key,
+        )
+    except Exception as e:
+        st.error(f"Error initializing client: {str(e)}")
+        st.session_state.client = None
 
 # Display chat history
 for message in st.session_state.messages:
@@ -122,12 +149,12 @@ def generate_image(prompt):
             return response.data[0].url
     except Exception as e:
         st.error(f"Error: {str(e)}")
-        return None, "Sorry, I encountered an error while generating the image. Please try again later."
+        return None
 
 # Main response generation function
 def generate_response(prompt):
-    if not OPENROUTER_API_KEY:
-        return "Error: OpenRouter API key is not configured. Please set the OPENROUTER_API_KEY environment variable."
+    if not st.session_state.client:
+        return "Please provide an OpenRouter API key to continue.", None
     
     if st.session_state.model_type == "Text":
         return generate_text_response(st.session_state.messages), None
