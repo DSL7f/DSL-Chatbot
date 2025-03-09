@@ -52,20 +52,28 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize session state for API key
+# Initialize session states
 if "api_key" not in st.session_state:
     # Try to get API key from environment variable
     default_api_key = os.getenv("OPENROUTER_API_KEY", "")
     st.session_state.api_key = default_api_key
 
+if "client" not in st.session_state:
+    st.session_state.client = None
+
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "rerun_requested" not in st.session_state:
+    st.session_state.rerun_requested = False
+
 # Initialize OpenAI client
-@st.cache_resource
-def get_openai_client(_api_key):
-    if not _api_key:
+def get_openai_client(api_key):
+    if not api_key:
         return None
     return OpenAI(
         base_url="https://openrouter.ai/api/v1",
-        api_key=_api_key,
+        api_key=api_key,
     )
 
 # Add a sidebar with information and settings
@@ -86,6 +94,7 @@ with st.sidebar:
                 st.session_state.api_key = api_key
                 st.session_state.client = get_openai_client(api_key)
                 st.success("API key updated successfully!")
+                st.session_state.rerun_requested = True
             else:
                 st.error("Please enter an API key")
     
@@ -112,20 +121,9 @@ with st.sidebar:
     Sign up at [OpenRouter](https://openrouter.ai/) to get one.
     """)
 
-# Initialize rerun flag if not present
-if "rerun_requested" not in st.session_state:
-    st.session_state.rerun_requested = False
-
-# Get client using the API key from session state
-client = get_openai_client(st.session_state.api_key)
-
 # App title
 st.title("🤖 QWQ-32B Chatbot")
 st.subheader("Chat with Qwen's QWQ-32B model via OpenRouter")
-
-# Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
 
 # Display chat messages from history
 for message in st.session_state.messages:
@@ -134,12 +132,12 @@ for message in st.session_state.messages:
 
 # Function to generate response
 def generate_response(prompt):
-    if not client:
+    if not st.session_state.client:
         return "Please enter your OpenRouter API key in the sidebar to continue."
     
     try:
         with st.spinner("Thinking..."):
-            completion = client.chat.completions.create(
+            completion = st.session_state.client.chat.completions.create(
                 model="qwen/qwq-32b",
                 messages=[
                     {"role": m["role"], "content": m["content"]} 
@@ -172,15 +170,11 @@ if prompt := st.chat_input("What would you like to ask?"):
         # Add assistant response to chat history
         st.session_state.messages.append({"role": "assistant", "content": response})
 
+# Initialize client if we have an API key but no client
+if st.session_state.api_key and not st.session_state.client:
+    st.session_state.client = get_openai_client(st.session_state.api_key)
+
 # Handle rerun requests at the end of the script
 if st.session_state.rerun_requested:
     st.session_state.rerun_requested = False
-    # Use JavaScript to reload the page
-    st.markdown(
-        """
-        <script>
-            window.parent.location.reload();
-        </script>
-        """,
-        unsafe_allow_html=True
-    ) 
+    st.rerun() 
