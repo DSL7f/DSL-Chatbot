@@ -43,26 +43,24 @@ def call_openrouter_api(messages, stream=False, use_groq=True):
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
-            "HTTP-Referer": "https://your-app-domain.com",  # Required by OpenRouter
-            "X-Title": "QWQ-32B AI Chatbot"  # Helps with OpenRouter analytics
+            # OpenRouter requires these headers
+            "HTTP-Referer": "https://your-app-domain.com",
+            "X-Title": "QWQ-32B AI Chatbot"
         }
         
-        # Don't add Accept header for streaming as it can cause issues
-        if stream:
-            headers["Accept"] = "text/event-stream"
-            
+        # Basic request data - simplifying to minimize potential issues
         data = {
-            "model": "qwen/qwq-32b",
+            "model": "qwen/qwen1.5-32b-chat",  # Corrected model name
             "messages": messages
         }
         
-        # Add Groq routing if specified
+        # Only add these optional parameters if needed
         if use_groq:
-            data["route"] = "groq"  # Use Groq provider for better throughput
+            data["route"] = "groq"
             
-        # Add streaming parameter if needed
         if stream:
             data["stream"] = True
+            headers["Accept"] = "text/event-stream"
         
         # Print request data for debugging
         print(f"Request URL: {url}")
@@ -71,6 +69,10 @@ def call_openrouter_api(messages, stream=False, use_groq=True):
         
         # Make the API call
         response = requests.post(url, headers=headers, json=data, stream=stream)
+        
+        # Print response status and headers for debugging
+        print(f"Response status: {response.status_code}")
+        print(f"Response headers: {response.headers}")
         
         # Check if the request was successful
         if response.status_code == 200:
@@ -87,6 +89,15 @@ def call_openrouter_api(messages, stream=False, use_groq=True):
                 print(f"Error details: {json.dumps(error_json, indent=2)}")
             except:
                 pass
+            
+            # Try a fallback to default routing if Groq was specified
+            if use_groq and "route" in data:
+                print("Trying again without Groq routing...")
+                del data["route"]
+                fallback_response = requests.post(url, headers=headers, json=data, stream=False)
+                if fallback_response.status_code == 200:
+                    return fallback_response.json()["choices"][0]["message"]["content"]
+                
             return f"Error: Unable to get a response (Status code: {response.status_code}). Please check the logs for details."
     
     except Exception as e:
@@ -101,7 +112,7 @@ This chatbot uses the QWQ-32B model from OpenRouter, which excels at reasoning a
 Ask any question and get a thoughtful response!
 """)
 
-# Sidebar with information
+# Sidebar with information and settings
 with st.sidebar:
     st.header("About QWQ-32B")
     st.markdown("""
@@ -115,6 +126,24 @@ with st.sidebar:
     - Detailed explanations
     - Nuanced understanding
     """)
+    
+    # Add model selection
+    st.subheader("Model Settings")
+    selected_model = st.selectbox(
+        "Select Model",
+        [
+            "qwen/qwen1.5-32b-chat",
+            "qwen/qwq-32b",
+            "anthropic/claude-3-opus-20240229"
+        ],
+        index=0
+    )
+    
+    # Add debug mode toggle
+    debug_mode = st.checkbox("Debug Mode", value=False)
+    
+    if debug_mode:
+        st.info("Debug mode is enabled. Check the terminal for detailed logs.")
     
     # Add a clear button to reset the conversation
     if st.button("Clear Conversation"):
@@ -189,32 +218,73 @@ def generate_response(messages):
         for m in messages
     ]
     
+    # Get the selected model from the sidebar
+    model_name = selected_model
+    
+    # Get debug mode setting
+    debug = debug_mode if 'debug_mode' in locals() else False
+    
     try:
-        # First try with streaming enabled and Groq provider
-        response = call_openrouter_api(formatted_messages, stream=True, use_groq=True)
+        # Get API key from Streamlit secrets
+        api_key = st.secrets["OPENROUTER_API_KEY"]
         
-        # Process the streaming response
-        if isinstance(response, requests.Response):
-            return process_streaming_response(response)
-        else:
-            # If we got a string response, it's likely an error message
-            print(f"Streaming with Groq failed, response: {response}")
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://your-app-domain.com",
+            "X-Title": "QWQ-32B AI Chatbot"
+        }
+        
+        data = {
+            "model": model_name,
+            "messages": formatted_messages
+        }
+        
+        if debug:
+            print(f"Using model: {model_name}")
+            print(f"Request data: {json.dumps(data, indent=2)}")
+        
+        # Show a status message
+        with st.status(f"Calling {model_name.split('/')[-1]}...", expanded=False) as status:
+            response = requests.post(url, headers=headers, json=data)
             
-            # If streaming failed with a 400 error, try without streaming
-            if "Error: Unable to get a response (Status code: 400)" in response:
-                print("Trying without streaming but still using Groq")
-                non_streaming_response = call_openrouter_api(formatted_messages, stream=False, use_groq=True)
+            if debug:
+                print(f"Response status: {response.status_code}")
+                if response.status_code != 200:
+                    print(f"Response text: {response.text}")
+            
+            if response.status_code == 200:
+                status.update(label="Success!", state="complete")
+                return response.json()["choices"][0]["message"]["content"]
+            else:
+                error_message = f"Error with {model_name}: {response.status_code}"
+                status.update(label=error_message, state="error")
                 
-                # If that still fails, try without Groq
-                if "Error: Unable to get a response" in non_streaming_response:
-                    print("Trying without Groq provider")
-                    return call_openrouter_api(formatted_messages, stream=False, use_groq=False)
-                return non_streaming_response
-            return response
+                # Try fallback models if the selected one fails
+                fallback_models = [m for m in ["qwen/qwen1.5-32b-chat", "qwen/qwq-32b", "anthropic/claude-3-opus-20240229"] if m != model_name]
+                
+                for fallback in fallback_models:
+                    with st.status(f"Trying fallback model {fallback.split('/')[-1]}...", expanded=False) as fallback_status:
+                        data["model"] = fallback
+                        if debug:
+                            print(f"Trying fallback model: {fallback}")
+                        
+                        fallback_response = requests.post(url, headers=headers, json=data)
+                        
+                        if fallback_response.status_code == 200:
+                            fallback_status.update(label=f"Success with {fallback.split('/')[-1]}!", state="complete")
+                            return fallback_response.json()["choices"][0]["message"]["content"]
+                        else:
+                            fallback_status.update(label=f"Fallback {fallback.split('/')[-1]} failed too", state="error")
+                
+                return f"I'm sorry, I couldn't get a response from any available model. Please try again later."
+    
     except Exception as e:
-        error_details = traceback.format_exc()
-        print(f"Error in generate_response: {str(e)}\n{error_details}")
-        return "I'm sorry, I encountered an error while processing your request. Please try again later."
+        if debug:
+            print(f"Error: {str(e)}")
+            print(traceback.format_exc())
+        return f"I'm sorry, I encountered an error while processing your request: {str(e)}"
 
 # User input
 if prompt := st.chat_input("What would you like to ask?"):
