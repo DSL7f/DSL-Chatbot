@@ -83,12 +83,12 @@ with st.sidebar:
     # Update API key in session state when changed
     if api_key != st.session_state.api_key:
         st.session_state.api_key = api_key
-        st.rerun()
+        st.session_state.rerun_requested = True
     
     # Add a clear button to reset the conversation
     if st.button("Clear Conversation"):
         st.session_state.messages = []
-        st.rerun()
+        st.session_state.rerun_requested = True
     
     st.title("About")
     st.markdown("""
@@ -101,6 +101,10 @@ with st.sidebar:
     To use this chatbot, you need an OpenRouter API key.
     Sign up at [OpenRouter](https://openrouter.ai/) to get one.
     """)
+
+# Initialize rerun flag if not present
+if "rerun_requested" not in st.session_state:
+    st.session_state.rerun_requested = False
 
 # Get client using the API key from session state
 client = get_openai_client(st.session_state.api_key)
@@ -156,4 +160,17 @@ if prompt := st.chat_input("What would you like to ask?"):
             st.markdown(response)
         
         # Add assistant response to chat history
-        st.session_state.messages.append({"role": "assistant", "content": response}) 
+        st.session_state.messages.append({"role": "assistant", "content": response})
+
+# Handle rerun requests at the end of the script
+if st.session_state.rerun_requested:
+    st.session_state.rerun_requested = False
+    # Use JavaScript to reload the page
+    st.markdown(
+        """
+        <script>
+            window.parent.location.reload();
+        </script>
+        """,
+        unsafe_allow_html=True
+    ) 
