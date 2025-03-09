@@ -1,5 +1,6 @@
 import streamlit as st
-from openai import OpenAI
+import requests
+import json
 import traceback
 
 # Set page configuration
@@ -31,26 +32,37 @@ st.markdown("""
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-if "client" not in st.session_state:
-    # Try to initialize the client with the API key from Streamlit secrets
+# Function to make API calls to OpenRouter
+def call_openrouter_api(messages):
     try:
+        # Get API key from Streamlit secrets
         api_key = st.secrets["OPENROUTER_API_KEY"]
-        # Simple client initialization without extra parameters
-        st.session_state.client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key
-        )
-        # Test the client with a simple request
-        test_response = st.session_state.client.chat.completions.create(
-            model="openai/gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "Hello"}],
-            max_tokens=5
-        )
+        
+        # Prepare the request
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        data = {
+            "model": "qwen/qwq-32b",
+            "messages": messages
+        }
+        
+        # Make the API call
+        response = requests.post(url, headers=headers, json=data)
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            print(f"API Error: {response.status_code} - {response.text}")
+            return f"Error: Unable to get a response (Status code: {response.status_code})"
+    
     except Exception as e:
-        st.session_state.client = None
-        st.error("Error initializing the chatbot. Please contact the administrator.")
-        print(f"Error details: {traceback.format_exc()}")
-        st.stop()
+        error_details = traceback.format_exc()
+        print(f"Error details: {error_details}")
+        return "I'm sorry, I encountered an error while processing your request. Please try again later."
 
 # Main app title and description
 st.title("QWQ-32B AI Chatbot")
@@ -86,21 +98,14 @@ for message in st.session_state.messages:
 
 # Function to generate text response
 def generate_response(messages):
-    try:
-        with st.spinner("Thinking..."):
-            completion = st.session_state.client.chat.completions.create(
-                model="qwen/qwq-32b",
-                messages=[
-                    {"role": m["role"], "content": m["content"]} 
-                    for m in messages
-                ]
-            )
-            return completion.choices[0].message.content
-    except Exception as e:
-        error_details = traceback.format_exc()
-        st.error("An error occurred while generating a response. Please try again later.")
-        print(f"Error details: {error_details}")
-        return "I'm sorry, I encountered an error while processing your request. Please try again later."
+    # Convert messages to the format expected by the API
+    formatted_messages = [
+        {"role": m["role"], "content": m["content"]} 
+        for m in messages
+    ]
+    
+    # Call the OpenRouter API
+    return call_openrouter_api(formatted_messages)
 
 # User input
 if prompt := st.chat_input("What would you like to ask?"):
@@ -113,8 +118,9 @@ if prompt := st.chat_input("What would you like to ask?"):
     
     # Generate and display assistant response
     with st.chat_message("assistant"):
-        response_text = generate_response(st.session_state.messages)
-        st.markdown(response_text)
+        with st.spinner("Thinking..."):
+            response_text = generate_response(st.session_state.messages)
+            st.markdown(response_text)
     
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response_text}) 
