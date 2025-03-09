@@ -12,7 +12,7 @@ OpenRouter is a unified API that gives you access to hundreds of AI models throu
 
 - Text generation with multiple model options (QWQ-32B, GPT-4o, Claude-3-Opus, etc.)
 - Image generation capabilities
-- Flexible API key configuration (Streamlit secrets, environment variables, or user input)
+- Secure API key management using Streamlit secrets
 - Clean, user-friendly interface
 - Conversation history maintained during the session
 
@@ -29,12 +29,15 @@ OpenRouter is a unified API that gives you access to hundreds of AI models throu
    pip install -r requirements.txt
    ```
 
-3. Set up your OpenRouter API key:
-   - Get an API key from [OpenRouter](https://openrouter.ai/keys)
-   - Create a `.env` file in the project root and add your API key:
+3. Set up your OpenRouter API key using Streamlit secrets:
+   - Create a `.streamlit` directory in your project root if it doesn't exist
+   - Create a `secrets.toml` file inside the `.streamlit` directory
+   - Add your OpenRouter API key to the file:
+     ```toml
+     OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
      ```
-     OPENROUTER_API_KEY=your_actual_api_key_here
-     ```
+   - Make sure to include the quotes around your API key
+   - **IMPORTANT**: Add `.streamlit/secrets.toml` to your `.gitignore` file to prevent committing your API key
 
 4. Run the application:
    ```
@@ -58,7 +61,6 @@ OpenRouter is a unified API that gives you access to hundreds of AI models throu
      OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
      ```
    - Make sure to include the quotes around your API key
-   - The format must be exactly as shown above (with spaces around the equals sign)
    - Click "Save" to store your secret
 
 5. Deploy the app by clicking "Deploy!"
@@ -73,8 +75,7 @@ If you're experiencing issues with the API key not being recognized in Streamlit
      OPENROUTER_API_KEY = "sk-or-v1-your-api-key-here"
      ```
    - Include the quotes around the API key
-   - Include spaces around the equals sign
-   - Do not add any comments or extra characters
+   - Do not add any comments or extra characters in the secrets management section
 
 2. **Verify the API key**:
    - Make sure your OpenRouter API key is valid and active
@@ -84,20 +85,11 @@ If you're experiencing issues with the API key not being recognized in Streamlit
    - After setting or updating secrets, restart your Streamlit app
    - In the Streamlit Cloud dashboard, click on the three dots next to your app and select "Reboot app"
 
-4. **Check the debug information**:
-   - The app includes debug information in the sidebar
-   - Look for success or error messages related to secrets and client initialization
-
 ## How It Works
 
 The application connects to OpenRouter's API using the OpenAI Python library because OpenRouter uses the OpenAI API format. This allows us to access a wide range of models through a single, consistent interface.
 
-The application is designed to check for the API key in the following order:
-1. Streamlit secrets (for cloud deployment)
-2. Environment variables (for local development)
-3. User input (as a fallback)
-
-This ensures that your app will work seamlessly in both local and cloud environments.
+The application securely loads your API key from Streamlit's secrets management system, which keeps it safe and prevents it from being exposed in your code or version control.
 
 ## Usage
 
