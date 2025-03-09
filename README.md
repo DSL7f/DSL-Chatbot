@@ -1,23 +1,21 @@
-# QWQ-32B Streamlit Chatbot
+# AI Chatbot with OpenRouter
 
-A modern, interactive chatbot built with Streamlit that uses Qwen's QWQ-32B model via OpenRouter API.
-
-![Chatbot Screenshot](https://i.imgur.com/placeholder.png)
+This is a Streamlit-based chatbot that uses OpenRouter to access various AI models, including QWQ-32B for text generation and image generation models like SDXL.
 
 ## Features
 
-- 🤖 Interactive chat interface with Qwen's QWQ-32B model
-- 💬 Persistent conversation history during your session
-- 🎨 Clean, modern UI with custom styling
-- 🔄 Conversation reset functionality
-- ⚡ Optimized API calls with caching
+- Text generation with multiple model options (QWQ-32B, GPT-4o, Claude-3-Opus, etc.)
+- Image generation capabilities
+- No need for users to input their own API keys
+- Clean, user-friendly interface
+- Conversation history maintained during the session
 
-## Installation
+## Setup
 
 1. Clone this repository:
    ```
-   git clone https://github.com/yourusername/qwq-chatbot.git
-   cd qwq-chatbot
+   git clone <repository-url>
+   cd <repository-directory>
    ```
 
 2. Install the required dependencies:
@@ -25,53 +23,42 @@ A modern, interactive chatbot built with Streamlit that uses Qwen's QWQ-32B mode
    pip install -r requirements.txt
    ```
 
-3. Set up your OpenRouter API key (choose one method):
-   
-   **Option 1: Environment file**
-   - Copy the example environment file: `cp .env.example .env`
-   - Edit the `.env` file and add your OpenRouter API key
-   
-   **Option 2: Environment variable**
-   - Set the environment variable directly:
-     - Windows: `set OPENROUTER_API_KEY=your_api_key_here`
-     - Linux/Mac: `export OPENROUTER_API_KEY=your_api_key_here`
-   
-   **Option 3: Input in the app**
-   - Enter your API key directly in the app's sidebar when prompted
+3. Set up your OpenRouter API key:
+   - Get an API key from [OpenRouter](https://openrouter.ai/keys)
+   - Replace the placeholder in the `.env` file with your actual API key:
+     ```
+     OPENROUTER_API_KEY=your_actual_api_key_here
+     ```
 
-   > 📝 Note: You'll need to sign up at [OpenRouter](https://openrouter.ai/) to get an API key.
+4. Run the application:
+   ```
+   streamlit run main.py
+   ```
+
+5. Open your browser and navigate to the URL shown in the terminal (usually http://localhost:8501)
+
+## Deployment
+
+For production deployment, make sure to set the `OPENROUTER_API_KEY` environment variable in your hosting platform:
+
+- **Streamlit Cloud**: Add the secret in the app settings
+- **Heroku**: Use config vars
+- **AWS**: Use environment variables or AWS Secrets Manager
 
 ## Usage
 
-Run the Streamlit app:
-```
-streamlit run main.py
-```
+1. Select the model type (Text or Image Generation) from the sidebar
+2. Choose a specific model from the dropdown menu
+3. Type your message in the chat input box and press Enter
+4. View the AI's response in the chat
+5. Use the "Clear Conversation" button in the sidebar to start a new conversation
 
-This will launch a web interface (typically at http://localhost:8501) where you can interact with the chatbot.
+## Important Notes
 
-## How It Works
-
-The application uses:
-- **Streamlit** for the web interface
-- **OpenAI Python SDK** to connect to OpenRouter's API
-- **Qwen's QWQ-32B model** for generating responses
-
-The chat history is maintained during your session, allowing for contextual conversations.
-
-## Customization
-
-You can customize the chatbot by:
-- Changing the model in `main.py` (replace `"qwen/qwq-32b"` with another model available on OpenRouter)
-- Modifying the UI styling in the CSS section
-- Adding additional features to the sidebar
+- All usage will be billed to the OpenRouter account associated with the API key
+- Consider implementing usage limits or monitoring to prevent unexpected costs
+- Keep your API key secure and never commit it to version control
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- [Streamlit](https://streamlit.io/) for the amazing web app framework
-- [OpenRouter](https://openrouter.ai/) for providing access to various AI models
-- [Qwen](https://qwenlm.github.io/) for their QWQ-32B model
+[MIT License](LICENSE)
