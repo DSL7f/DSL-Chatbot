@@ -6,7 +6,7 @@ import json
 
 # Set page configuration
 st.set_page_config(
-    page_title="AI Chatbot",
+    page_title="OpenRouter AI Chatbot",
     page_icon="🤖",
     layout="centered"
 )
@@ -67,7 +67,8 @@ if not st.session_state.api_key:
         if env_api_key:
             st.session_state.api_key = env_api_key
 
-# Initialize the client if we have an API key
+# Initialize the OpenRouter client if we have an API key
+# Note: OpenRouter uses the OpenAI API format, so we use the OpenAI library
 if st.session_state.api_key and not st.session_state.client:
     try:
         st.session_state.client = OpenAI(
@@ -79,18 +80,18 @@ if st.session_state.api_key and not st.session_state.client:
 
 # Add a sidebar with information and settings
 with st.sidebar:
-    st.title("AI Chatbot")
+    st.title("OpenRouter AI Chatbot")
     st.markdown("""
     This chatbot uses OpenRouter to access various AI models.
     
-    You can have a conversation with the AI and ask it various questions.
+    OpenRouter provides access to models like QWQ-32B, GPT-4o, Claude, and more through a unified API.
     
     The chat history is maintained during your session.
     """)
     
     # API Key status and input
     if st.session_state.api_key:
-        st.success("API key is configured ✅")
+        st.success("OpenRouter API key is configured ✅")
         
         # Add option to reset API key
         if st.button("Reset API Key"):
@@ -98,7 +99,7 @@ with st.sidebar:
             st.session_state.client = None
             st.session_state.rerun_requested = True
     else:
-        st.warning("No API key found in secrets or environment variables.")
+        st.warning("No OpenRouter API key found in secrets or environment variables.")
         api_key_input = st.text_input(
             "Enter your OpenRouter API key:",
             type="password",
@@ -114,9 +115,9 @@ with st.sidebar:
                     base_url="https://openrouter.ai/api/v1",
                     api_key=api_key_input
                 )
-                st.success("API key set successfully!")
+                st.success("OpenRouter API key set successfully!")
             except Exception as e:
-                st.error(f"Error initializing client: {str(e)}")
+                st.error(f"Error initializing OpenRouter client: {str(e)}")
                 st.session_state.client = None
             
             st.session_state.rerun_requested = True
@@ -153,7 +154,7 @@ with st.sidebar:
     st.write(f"Client Status: {'Initialized' if st.session_state.client else 'Not Initialized'}")
     
     # Test connection button
-    if st.session_state.api_key and st.button("Test Connection"):
+    if st.session_state.api_key and st.button("Test OpenRouter Connection"):
         try:
             # Simple test request
             response = st.session_state.client.chat.completions.create(
@@ -161,9 +162,9 @@ with st.sidebar:
                 messages=[{"role": "user", "content": "Hello"}],
                 max_tokens=5
             )
-            st.success("Connection successful! ✅")
+            st.success("OpenRouter connection successful! ✅")
         except Exception as e:
-            st.error(f"Connection failed: {str(e)}")
+            st.error(f"OpenRouter connection failed: {str(e)}")
 
 # Display chat history
 for message in st.session_state.messages:
@@ -186,7 +187,7 @@ def generate_text_response(messages):
             )
             return completion.choices[0].message.content
     except Exception as e:
-        st.error(f"Error: {str(e)}")
+        st.error(f"OpenRouter API Error: {str(e)}")
         return "Sorry, I encountered an error while processing your request. Please try again later."
 
 # Function to generate image
@@ -202,13 +203,13 @@ def generate_image(prompt):
             # Return the image URL
             return response.data[0].url
     except Exception as e:
-        st.error(f"Error: {str(e)}")
+        st.error(f"OpenRouter API Error: {str(e)}")
         return None
 
 # Main response generation function
 def generate_response(prompt):
     if not st.session_state.client:
-        return "Error: OpenAI client is not initialized. Please check your API key and try again.", None
+        return "Error: OpenRouter client is not initialized. Please check your API key and try again.", None
     
     if st.session_state.model_type == "Text":
         return generate_text_response(st.session_state.messages), None

@@ -1,6 +1,12 @@
-# AI Chatbot with OpenRouter
+# OpenRouter AI Chatbot
 
 This is a Streamlit-based chatbot that uses OpenRouter to access various AI models, including QWQ-32B for text generation and image generation models like SDXL.
+
+## About OpenRouter
+
+OpenRouter is a unified API that gives you access to hundreds of AI models through a single endpoint. It provides access to models from various providers including OpenAI, Anthropic, Google, and many open-source models.
+
+**Important Note**: OpenRouter uses the OpenAI API format, which is why we use the OpenAI Python library to connect to it. This doesn't mean we're using OpenAI directly - we're using OpenRouter's service which provides access to many different models.
 
 ## Features
 
@@ -72,15 +78,19 @@ If you're experiencing issues with the API key not being recognized in Streamlit
 
 2. **Verify the API key**:
    - Make sure your OpenRouter API key is valid and active
-   - Test it with a direct API call to OpenRouter
+   - Test it with the "Test OpenRouter Connection" button in the sidebar
 
 3. **Restart the app**:
    - After setting or updating secrets, restart your Streamlit app
    - In the Streamlit Cloud dashboard, click on the three dots next to your app and select "Reboot app"
 
-4. **Check for error messages**:
-   - The app now includes debug information in the sidebar
+4. **Check the debug information**:
+   - The app includes debug information in the sidebar
    - Look for success or error messages related to secrets and client initialization
+
+## How It Works
+
+The application connects to OpenRouter's API using the OpenAI Python library because OpenRouter uses the OpenAI API format. This allows us to access a wide range of models through a single, consistent interface.
 
 The application is designed to check for the API key in the following order:
 1. Streamlit secrets (for cloud deployment)
