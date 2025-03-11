@@ -48,7 +48,7 @@ def call_openrouter_api(messages):
         }
         data = {
             "model": "qwen/qwq-32b",
-            "route": "groq",  # Specify Groq as the provider for better throughput
+            # Removed invalid "route": "groq" parameter
             "messages": messages
         }
         
@@ -127,4 +127,4 @@ if prompt := st.chat_input("What would you like to ask?"):
             st.markdown(response_text)
     
     # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": response_text}) 
+    st.session_state.messages.append({"role": "assistant", "content": response_text})
